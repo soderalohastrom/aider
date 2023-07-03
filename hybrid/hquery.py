@@ -7,12 +7,18 @@ import pinecone
 from transformers import AutoTokenizer, AutoModelForMaskedLM
 from langchain.llms import OpenAI
 from langchain.chains import LLMChain
+from langchain.embeddings.openai import OpenAIEmbeddings
 
-llm = LLMChain(llm=OpenAI(model_name="text-davinci-003"), prompt="some_prompt")
+print(os.getenv('OPENAI_API_KEY'))
+model_name = 'text-embedding-ada-002'
 
-
-os.environ["OPENAI_API_KEY"] = "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"
-
+embed = OpenAIEmbeddings(
+    model=model_name,
+    openai_api_key="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"
+)
+llm=OpenAI(model_name="text-embedding-ada-002")
+from getpass import getpass
+OPENAI_API_KEY = getpass("OpenAI API Key: ")  # platform.openai.com
 print("Imported necessary libraries")
 
 # init connection to pinecone
