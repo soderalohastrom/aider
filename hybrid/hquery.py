@@ -9,14 +9,12 @@ from langchain.llms import OpenAI
 from langchain.chains import LLMChain
 from langchain.embeddings.openai import OpenAIEmbeddings
 
-print(os.getenv('OPENAI_API_KEY'))
 model_name = 'text-embedding-ada-002'
 
-import os
 os.environ['OPENAI_API_KEY'] = "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"
 embed = OpenAIEmbeddings(
     model=model_name,
-    openai_api_key=os.getenv('OPENAI_API_KEY')
+    openai_api_key=os.environ['OPENAI_API_KEY']
 )
 llm=OpenAI(model_name="text-embedding-ada-002")
 print("Imported necessary libraries")
