@@ -8,8 +8,13 @@ from transformers import AutoTokenizer, AutoModelForMaskedLM
 from langchain.llms import OpenAI
 from langchain.chains import LLMChain
 from langchain.embeddings.openai import OpenAIEmbeddings
+from dotenv import load_dotenv, find_dotenv
+load_dotenv(find_dotenv())
 
 model_name = 'text-embedding-ada-002'
+
+import os
+api_key = os.environ['OPENAI_API_KEY']
 
 os.environ['OPENAI_API_KEY'] = "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"
 embed = OpenAIEmbeddings(
@@ -74,7 +79,7 @@ def hybrid_query(question, top_k, alpha):
 
 question = "who lives in Ohio?"
 print(f"Question: {question}")
-results = hybrid_query(question, top_k=3, alpha=1)
+results = hybrid_query(question, top_k=3, alpha=0.5)
 print("Results:")
 for result in results:
     print(result)
