@@ -1,0 +1,7 @@
+pytest
+pip-tools
+lox
+matplotlib
+pandas
+typer
+imgcat

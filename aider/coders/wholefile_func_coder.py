@@ -1,5 +1,3 @@
-import os
-
 from aider import diffs
 
 from ..dump import dump  # noqa: F401
@@ -46,25 +44,18 @@ class WholeFileFunctionCoder(Coder):
     ]
 
     def __init__(self, *args, **kwargs):
+        raise RuntimeError("Deprecated, needs to be refactored to support get_edits/apply_edits")
+
         self.gpt_prompts = WholeFileFunctionPrompts()
         super().__init__(*args, **kwargs)
 
-    def update_cur_messages(self, content, edited):
+    def update_cur_messages(self, edited):
         if edited:
             self.cur_messages += [
                 dict(role="assistant", content=self.gpt_prompts.redacted_edit_message)
             ]
         else:
-            self.cur_messages += [dict(role="assistant", content=content)]
-
-    def get_context_from_history(self, history):
-        context = ""
-        if history:
-            context += "# Context:\n"
-            for msg in history:
-                if msg["role"] == "user":
-                    context += msg["role"].upper() + ": " + msg["content"] + "\n"
-        return context
+            self.cur_messages += [dict(role="assistant", content=self.partial_response_content)]
 
     def render_incremental_response(self, final=False):
         if self.partial_response_content:
@@ -99,10 +90,13 @@ class WholeFileFunctionCoder(Coder):
         lines = content.splitlines(keepends=True)
 
         # ending an existing block
-        full_path = os.path.abspath(os.path.join(self.root, fname))
+        full_path = self.abs_root_path(fname)
 
-        with open(full_path, "r") as f:
-            orig_lines = f.readlines()
+        content = self.io.read_text(full_path)
+        if content is None:
+            orig_lines = []
+        else:
+            orig_lines = content.splitlines()
 
         show_diff = diffs.diff_partial_update(
             orig_lines,
@@ -113,7 +107,7 @@ class WholeFileFunctionCoder(Coder):
 
         return "\n".join(show_diff)
 
-    def update_files(self):
+    def _update_files(self):
         name = self.partial_response_function_call.get("name")
         if name and name != "write_file":
             raise ValueError(f'Unknown function_call name="{name}", use name="write_file"')

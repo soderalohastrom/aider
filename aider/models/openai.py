@@ -1,19 +1,18 @@
 import re
 
+import tiktoken
+
+from .model import Model
+
 known_tokens = {
     "gpt-3.5-turbo": 4,
     "gpt-4": 8,
+    "gpt-4-1106-preview": 128,
+    "gpt-3.5-turbo-1106": 16,
 }
 
 
-class Model:
-    always_available = False
-    use_repo_map = False
-    send_undo_reply = False
-
-    prompt_price = None
-    completion_price = None
-
+class OpenAIModel(Model):
     def __init__(self, name):
         self.name = name
 
@@ -31,6 +30,7 @@ class Model:
             raise ValueError(f"Unknown context window size for model: {name}")
 
         self.max_context_tokens = tokens * 1024
+        self.tokenizer = tiktoken.encoding_for_model(name)
 
         if self.is_gpt4():
             self.edit_format = "diff"
@@ -43,6 +43,9 @@ class Model:
             elif tokens == 32:
                 self.prompt_price = 0.06
                 self.completion_price = 0.12
+            elif tokens == 128:
+                self.prompt_price = 0.01
+                self.completion_price = 0.03
 
             return
 
@@ -50,7 +53,10 @@ class Model:
             self.edit_format = "whole"
             self.always_available = True
 
-            if tokens == 4:
+            if self.name == "gpt-3.5-turbo-1106":
+                self.prompt_price = 0.001
+                self.completion_price = 0.002
+            elif tokens == 4:
                 self.prompt_price = 0.0015
                 self.completion_price = 0.002
             elif tokens == 16:
@@ -66,11 +72,3 @@ class Model:
 
     def is_gpt35(self):
         return self.name.startswith("gpt-3.5-turbo")
-
-    def __str__(self):
-        return self.name
-
-
-GPT4 = Model("gpt-4")
-GPT35 = Model("gpt-3.5-turbo")
-GPT35_16k = Model("gpt-3.5-turbo-16k")

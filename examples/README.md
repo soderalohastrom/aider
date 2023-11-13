@@ -35,11 +35,13 @@ To better understand the chat transcripts, it's worth knowing that:
 
 ## Transcript formatting
 
+<div class="chat-transcript" markdown="1">
+
 > This is output from the aider tool.
 
 #### These are chat messages written by the user.
 
-Chat responses from GPT-4 are in a plain font like this, and often include colorized "edit blocks" that specify edits to the code.
+Chat responses from GPT-4 are in a blue font like this, and often include colorized "edit blocks" that specify edits to the code.
 Here's a sample edit block that switches from printing "hello" to "goodbye":
 
 ```python
@@ -50,3 +52,5 @@ print("hello")
 print("goodbye")
 >>>>>>> UPDATED
 ```
+
+</div>

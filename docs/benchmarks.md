@@ -37,7 +37,7 @@ The results were interesting:
 
   - **Plain text edit formats worked best.** Asking GPT to return an updated copy of the whole file in a standard markdown fenced code block proved to be the most reliable and effective edit format across all GPT-3.5 and GPT-4 models. The results for this `whole` edit format are shown in solid blue in the graph.
   - **Function calls performed worse.** Using the new functions API for edits performed worse than the above whole file method, for all the models. GPT-3.5 especially produced inferior code and frequently mangled this output format. This was surprising, as the functions API was introduced to enhance the reliability of structured outputs. The results for these `...-func` edit methods are shown as patterned bars in the graph (both green and blue).
-  - **The new GPT-3.5 models did worse than the old model.** The performance of the new June (`0613`) versions of GPT-3.5 appears to be a bit worse than the February (`0301`) version. This is visible if you look at the "first attempt" markers on the first three solid blue bars and also by comparing the first three solid green `diff` bars.
+  - **The new June GPT-3.5 models did a bit worse than the old June model.** The performance of the new June (`0613`) versions of GPT-3.5 appears to be a bit worse than the February (`0301`) version. This is visible if you look at the "first attempt" markers on the first three solid blue bars and also by comparing the first three solid green `diff` bars.
   - **GPT-4 does better than GPT-3.5,** as expected.
 
 The quantitative benchmark results agree with my intuitions
@@ -69,7 +69,7 @@ More details on the benchmark, edit formats and results are discussed below.
 
 ## The benchmark
 
-The benchmark uses 
+The benchmark uses
 [133 practice exercises from the Exercism python repository](https://github.com/exercism/python/tree/main/exercises/practice).
 These
 exercises were designed to help individuals learn Python and hone
@@ -199,7 +199,7 @@ demo.py
 
 ### whole-func
 
-The [whole-func](https://github.com/paul-gauthier/aider/blob/main/aider/coders/wholefile_func_coder.py) 
+The [whole-func](https://github.com/paul-gauthier/aider/blob/main/aider/coders/wholefile_func_coder.py)
 format requests updated copies of whole files to be returned using the function call API.
 
 
@@ -218,7 +218,7 @@ format requests updated copies of whole files to be returned using the function 
 
 The
 [diff-func](https://github.com/paul-gauthier/aider/blob/main/aider/coders/editblock_func_coder.py)
-format requests a list of 
+format requests a list of
 original/updated style edits to be returned using the function call API.
 
 ```
@@ -235,14 +235,14 @@ original/updated style edits to be returned using the function call API.
             ],
         }
     ]
-}       
+}
 ```
 
 ## GPT-3.5's performance
 
 ### The `0613` models seem worse?
 
-The benchmark results have me fairly convinced that the new
+The GPT-3.5 benchmark results have me fairly convinced that the new
 `gpt-3.5-turbo-0613` and `gpt-3.5-16k-0613` models
 are a bit worse at code editing than
 the older `gpt-3.5-turbo-0301` model.
@@ -307,7 +307,7 @@ The benchmark harness also logs SHA hashes of
 all the OpenAI API requests and replies.
 This makes it possible to
 detect randomness or nondeterminism
-in the bechmarking process.
+in the benchmarking process.
 
 It turns out that the OpenAI chat APIs are not deterministic, even at
 `temperature=0`.  The same identical request will produce multiple

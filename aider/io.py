@@ -5,6 +5,7 @@ from pathlib import Path
 
 from prompt_toolkit.completion import Completer, Completion
 from prompt_toolkit.history import FileHistory
+from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.lexers import PygmentsLexer
 from prompt_toolkit.shortcuts import CompleteStyle, PromptSession, prompt
 from prompt_toolkit.styles import Style
@@ -18,10 +19,11 @@ from .dump import dump  # noqa: F401
 
 
 class AutoCompleter(Completer):
-    def __init__(self, root, rel_fnames, addable_rel_fnames, commands):
+    def __init__(self, root, rel_fnames, addable_rel_fnames, commands, encoding):
         self.commands = commands
         self.addable_rel_fnames = addable_rel_fnames
         self.rel_fnames = rel_fnames
+        self.encoding = encoding
 
         fname_to_rel_fnames = defaultdict(list)
         for rel_fname in addable_rel_fnames:
@@ -38,9 +40,12 @@ class AutoCompleter(Completer):
         for rel_fname in rel_fnames:
             self.words.add(rel_fname)
 
-            fname = os.path.join(root, rel_fname)
-            with open(fname, "r") as f:
-                content = f.read()
+            fname = Path(root) / rel_fname
+            try:
+                with open(fname, "r", encoding=self.encoding) as f:
+                    content = f.read()
+            except (FileNotFoundError, UnicodeDecodeError):
+                continue
             try:
                 lexer = guess_lexer_for_filename(fname, content)
             except ClassNotFound:
@@ -97,6 +102,8 @@ class InputOutput:
         user_input_color="blue",
         tool_output_color=None,
         tool_error_color="red",
+        encoding="utf-8",
+        dry_run=False,
     ):
         no_color = os.environ.get("NO_COLOR")
         if no_color is not None and no_color != "":
@@ -108,7 +115,11 @@ class InputOutput:
 
         self.input = input
         self.output = output
+
         self.pretty = pretty
+        if self.output:
+            self.pretty = False
+
         self.yes = yes
 
         self.input_history_file = input_history_file
@@ -117,13 +128,34 @@ class InputOutput:
         else:
             self.chat_history_file = None
 
+        self.encoding = encoding
+        self.dry_run = dry_run
+
         if pretty:
             self.console = Console()
         else:
-            self.console = Console(no_color=True)
+            self.console = Console(force_terminal=False, no_color=True)
 
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         self.append_chat_history(f"\n# aider chat started at {current_time}\n\n")
+
+    def read_text(self, filename):
+        try:
+            with open(str(filename), "r", encoding=self.encoding) as f:
+                return f.read()
+        except FileNotFoundError:
+            self.tool_error(f"{filename}: file not found error")
+            return
+        except UnicodeError as e:
+            self.tool_error(f"{filename}: {e}")
+            self.tool_error("Use --encoding to set the unicode encoding.")
+            return
+
+    def write_text(self, filename, content):
+        if self.dry_run:
+            return
+        with open(str(filename), "w", encoding=self.encoding) as f:
+            f.write(content)
 
     def get_input(self, root, rel_fnames, addable_rel_fnames, commands):
         if self.pretty:
@@ -152,7 +184,9 @@ class InputOutput:
             style = None
 
         while True:
-            completer_instance = AutoCompleter(root, rel_fnames, addable_rel_fnames, commands)
+            completer_instance = AutoCompleter(
+                root, rel_fnames, addable_rel_fnames, commands, self.encoding
+            )
             if multiline_input:
                 show = ". "
 
@@ -171,7 +205,13 @@ class InputOutput:
             if self.input_history_file is not None:
                 session_kwargs["history"] = FileHistory(self.input_history_file)
 
-            session = PromptSession(**session_kwargs)
+            kb = KeyBindings()
+
+            @kb.add("escape", "c-m", eager=True)
+            def _(event):
+                event.current_buffer.insert_text("\n")
+
+            session = PromptSession(key_bindings=kb, **session_kwargs)
             line = session.prompt()
 
             if line and line[0] == "{" and not multiline_input:
@@ -191,7 +231,23 @@ class InputOutput:
         self.user_input(inp)
         return inp
 
-    def user_input(self, inp):
+    def add_to_input_history(self, inp):
+        if not self.input_history_file:
+            return
+        FileHistory(self.input_history_file).append_string(inp)
+
+    def get_input_history(self):
+        if not self.input_history_file:
+            return []
+
+        fh = FileHistory(self.input_history_file)
+        return fh.load_history_strings()
+
+    def user_input(self, inp, log_only=True):
+        if not log_only:
+            style = dict(style=self.user_input_color) if self.user_input_color else dict()
+            self.console.print(inp, **style)
+
         prefix = "####"
         if inp:
             hist = inp.splitlines()
@@ -278,5 +334,5 @@ class InputOutput:
         if not text.endswith("\n"):
             text += "\n"
         if self.chat_history_file is not None:
-            with self.chat_history_file.open("a") as f:
+            with self.chat_history_file.open("a", encoding=self.encoding) as f:
                 f.write(text)

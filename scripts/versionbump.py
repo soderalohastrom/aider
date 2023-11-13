@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import argparse
 import re
 import subprocess
@@ -19,6 +21,9 @@ def main():
         raise ValueError(f"Invalid version format, must be x.y.z: {new_version_str}")
 
     new_version = version.parse(new_version_str)
+    incremented_version = version.Version(
+        f"{new_version.major}.{new_version.minor}.{new_version.micro + 1}"
+    )
 
     with open("aider/__init__.py", "r") as f:
         content = f.read()
@@ -31,10 +36,9 @@ def main():
 
     updated_content = re.sub(r'__version__ = ".+?"', f'__version__ = "{new_version}"', content)
 
-    if dry_run:
-        print("Updating aider/__init__.py with new version:")
-        print(updated_content)
-    else:
+    print("Updating aider/__init__.py with new version:")
+    print(updated_content)
+    if not dry_run:
         with open("aider/__init__.py", "w") as f:
             f.write(updated_content)
 
@@ -47,9 +51,30 @@ def main():
     ]
 
     for cmd in git_commands:
-        if dry_run:
-            print(f"Running: {' '.join(cmd)}")
-        else:
+        print(f"Running: {' '.join(cmd)}")
+        if not dry_run:
+            subprocess.run(cmd, check=True)
+
+    updated_dev_content = re.sub(
+        r'__version__ = ".+?"', f'__version__ = "{incremented_version}-dev"', content
+    )
+
+    print()
+    print("Updating aider/__init__.py with new dev version:")
+    print(updated_dev_content)
+    if not dry_run:
+        with open("aider/__init__.py", "w") as f:
+            f.write(updated_dev_content)
+
+    git_commands_dev = [
+        ["git", "add", "aider/__init__.py"],
+        ["git", "commit", "-m", f"set version to {incremented_version}-dev"],
+        ["git", "push", "origin"],
+    ]
+
+    for cmd in git_commands_dev:
+        print(f"Running: {' '.join(cmd)}")
+        if not dry_run:
             subprocess.run(cmd, check=True)
 
 
